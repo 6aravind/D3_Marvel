@@ -1,0 +1,297 @@
+<!DOCTYPE html> 
+  <meta charset="utf-8">
+  <head>
+    <title>Marvel</title>
+  </head>
+
+  <style>
+
+   path, line, text {
+    stroke : #FFFFFF;
+   }
+
+   .text-anchor {
+    font-family: 'Merriweather Sans', sans-serif;
+   }
+
+   div.tooltip{
+    position: absolute;
+    text-align: center;
+    width: 500px;
+    height: auto;
+    padding: 5px;
+    font-family: 'Merriweather Sans', sans-serif;
+    background: #FFFFFF;
+    pointer-events: none;
+    border: 0px;
+    border-radius: 10px; 
+   }
+
+   .button{
+    text-align: center;
+   }
+
+  </style>
+
+  <body bgcolor = "#ED1D24">
+    <h1 style="color: #FFFFFF; font-size: 28px; text-align: center; font-family: 'Merriweather Sans', sans-serif;">MARVEL STUDIOS</h1>
+
+    <p style="color: #FFFFFF;font-size: 17px;"> Marvel Studios has released 19 films since 2008 within the Marvel Cinematic Universe, from Iron Man (2008) to Avengers: Infinity War (2018). These films all share continuity with each other, along with the One-Shots produced by the studio and the television shows produced by Marvel Television. The series has grossed over $16 billion at the global box office, making it the highest-grossing film franchise of all time. It was acquired back in 2009 by the Walt Disney Co. DIS for $4 billion. Many were worried that the deal would both ruin beloved Marvel characters like Iron Man and damage Disney's financial standing and stock valuation. Fast forward to 2018, and Disney's acquisition could very well be one of the best things to happen to both the media giant and the comic book publisher.</p>
+
+    <div class= "button">
+      <button id = "phase" style = "color: #ED1D24; font-family: 'Merriweather Sans', sans-serif; ">Phase Split</button>
+      <button id = "year" style = "color: #ED1D24; font-family: 'Merriweather Sans', sans-serif; ">Timeline</button>
+    </div>
+
+
+    <div id="content">
+      <svg width="1800" height="800">
+      <g transform="translate(10, 50)"></g>
+      </svg>
+    </div>
+    
+    <p style="color: #FFFFFF;font-size: 15px;"> Each circle denotes a movie. Size of the circle denotes the money earned by the movie. Hover over a particular movie to get more details about the movie. The MCU is split by three phases, select the phase split button to split the movies by phases.</p>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.2/d3.min.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Merriweather+Sans" rel="stylesheet"> 
+
+    <script>
+      var width = 1600, height = 700, rmin = 40, rmax = 70, padding = 10;
+
+      var xScale = d3.scaleTime().range([padding * 10, width + padding]);
+      var rScale = d3.scaleLinear().range([rmin, rmax]);
+
+      var yearParse = d3.timeParse("%Y");
+      var dateParse = d3.timeParse("%Y-%m-%d");
+
+      var defs = d3.select("svg g").append("defs");
+
+      var tooltip = d3.select("#content").append("div").attr('class', 'tooltip').style('opacity',0).attr("width", width);
+
+      var Phase = {"One" : ["Iron Man","Iron Man 2","The Incredible Hulk","Captain America: The First Avenger","Thor","Marvel's The Avengers"], "Two" : ["Guardians of the Galaxy","Ant-Man","Captain America: The Winter Soldier","Iron Man 3","Avengers: Age of Ultron","Thor: The Dark World"], "Three":["Thor: Ragnarok","Guardians of the Galaxy Vol. 2", "Doctor Strange", "Avengers: Infinity War", "Spider-Man: Homecoming", "Captain America: Civil War","Black Panther"]};
+
+      var phasePos = {"One": 155, "Two": 325, "Three": 590};
+
+      // ToolTip functions
+      function mouseoOn(d) {
+        
+        // Hide all circles except the selected one
+        var id = d3.select(this).attr("id");
+        d3.selectAll("circle").style("visibility","hidden");
+        d3.select("#" + id).style("visibility","visible");
+        d3.select(".x.axis").style("visibility","hidden");
+
+        // get position
+        var xpos = 900 - (d3.event.pageX) > 0 ? 150 + (d3.event.pageX)  : (d3.event.pageX) - 650;
+        var ypos = 900 - (d3.event.pageY) < 0 ? 150 + (d3.event.pageY)  : (d3.event.pageY) * 3/4;
+
+        // Hide labels
+        d3.selectAll(".labels").style("visibility","hidden");
+
+        // format
+        var dollar = d3.format(".2s");
+
+        var Description = 'Movie: ' + d.Name + '<br/>' + "Gross: " + dollar(d.Amount).replace("M","Million($)") + '<br/>' + "ReleaseDate: " + d.ReleaseDate.toString() + '<br/>' + "Summary: " + '<br/>' + d.Desc;
+
+        // Show tooltip
+        tooltip.transition().style('opacity', .9);
+        tooltip.html(Description)
+          .attr("padding-left","10px")
+          .style('color', "#ED1D24")
+          .style('font-family', "'Merriweather Sans', sans-serif")
+          .style('text-align', "left")
+          .style('left', (xpos) + 'px')
+          .style('top', ypos + 'px');
+      }
+
+      function mouseOff(d) {
+
+        // Show all circles and hide tooltip
+        d3.selectAll("circle").style("visibility","visible");
+        d3.select(".x.axis").style("visibility","visible");
+        tooltip.transition().style('opacity', 0);
+      }
+
+      d3.csv("BoxOffice_Marvel.csv", function(dat_org) {
+
+        var data = dat_org.map(function(d){
+          d.Gross = +d.Gross.substring(1).replace(/,/g,"");
+          d["Gross-to-Date"] = +d["Gross-to-Date"].substring(1).replace(/,/g,"");
+          d["DayNr"] = +d["Day #"];
+          d["Year"] = +d["Date"].substring(0,4); 
+          d["Date"] = d["Date"];
+          
+          return d;
+        });
+
+
+        // Get Summary
+        var nodes = data.filter(function(d) { return d.DayNr == 1;}).map(function(d) { return {
+          "Name": d["MovieName"], 
+          "ReleaseDate":d["Date"], 
+          "ReleaseYear":yearParse(d["Year"]),
+          "Image": d["Image"],
+          };
+        });
+
+
+        // read description
+        d3.csv("Desc.csv", function(d1) { 
+          //if(e) console.log(e);
+          //console.log(d);
+          	desc = d1;
+
+
+	        // add images
+	        var pattern = defs.selectAll("pattern")
+	                        .data(nodes);
+
+
+	        pattern.enter()
+	          .append("pattern")
+	          .attr("id",function(d) { return d.Name.replace(/\W/g, "") + "-image";})
+	          .attr("width","100%")
+	          .attr("height","100%")
+	          .attr("patternContentUnits","objectBoundingBox")
+	          .append("image")
+	          .attr("xlink", "https://www.w3.org/1999/xlink")
+	          .attr("href",function(d) { return d.Image;})    
+	          .attr("width","1")
+	          .attr("height","1")
+	          .attr("preserveAspectRatio","none");
+
+	        pattern.exit().remove();
+
+	        // Add total amount collected and Description
+	        nodes = nodes.map(function(d){
+	          d["Amount"] = d3.max(data.filter(function(d1) { return d1.MovieName == d.Name; }).map(function(d2) { return d2["Gross-to-Date"];}));
+	          d["Desc"] = desc.filter(function(d1) {return d1.Name == d.Name;}).map(function(d2) { return d2.Description;})[0];
+	          return d;
+	        });
+
+
+
+	        // Set Radius domain
+	        var Amount = nodes.map(function(d){ return d.Amount;}).sort();
+	        rScale.domain([d3.min(Amount), d3.max(Amount)]);
+
+
+	        // Set x domain
+	        var Year = nodes.map(function(d){ return d.ReleaseYear;}).sort();
+	        xScale.domain(d3.extent(Year));
+
+
+	        var movieList = d3.map(data, function(d) { return d.MovieName;}).keys();
+	        //console.log(movieList);
+
+	        // define force functions
+	        var forceX = d3.forceX().x(function(d) {  return xScale(d.ReleaseYear); })
+
+	        var forceY = d3.forceY().y(function(d) { 
+	          if(Phase["One"].includes(d.Name)){
+	            return phasePos["One"];
+	           }
+	           if(Phase["Three"].includes(d.Name)){
+	            return phasePos["Three"];
+	           }
+	           if(Phase["Two"].includes(d.Name)){
+	            return phasePos["Two"];
+	           } 
+	           else{
+	            return 0;
+	          }
+	        });
+
+
+	        var forceYCombine = d3.forceY().y(function(d) { return height / 3.5 ; });
+
+	        var forceCollide = d3.forceCollide().radius(function(d) { return rScale(d.Amount) + 2.5; })
+
+
+
+	      // Set position for circles
+	      var simulation = d3.forceSimulation(nodes)
+	      .force('charge', d3.forceManyBody().strength(-5))
+	      .force('x', forceX)
+	      .force('y', forceYCombine)
+	      .force('collision', forceCollide)
+	      .on('tick', ticked);
+
+
+
+	      // Function to update circle properties
+	      function ticked() {
+
+	        // Add Data to circles
+	        var u = d3.select('svg g')
+	          .selectAll('circle')
+	          .data(nodes);
+
+	        // Set circle attributes
+	        u.enter()
+	          .append('circle')
+	          .attr('r', function(d) { return rScale(d.Amount); })
+	          .attr('id', function(d) { return d.Name.replace(/\W/g, ""); })
+	          .attr("fill", function(d) { return "url(#" + d.Name.replace(/\W/g, "") + "-image)";})
+	          .merge(u)
+	          .attr('cx', function(d) { return d.x; })
+	          .attr('cy', function(d) { return d.y; })
+	          .on('mouseover', mouseoOn)
+	          .on('mouseout',mouseOff);
+
+	        // On circle exit
+	        u.exit().remove();
+	      }
+
+	      // Add x axis
+	      d3.select("svg g").append("g")
+	        .attr("class", "x axis")
+	        .style("stroke", "#FFFFFF")
+	        .attr("transform", "translate(0," + padding * 2 +")")
+	        .call(d3.axisTop(xScale).tickFormat(d3.timeFormat("%Y")))
+	        .selectAll("text")
+	          .style("text-anchor", "end")
+	          .attr("dx", ".8em")
+	          .attr("dy", "-.4em")
+	          .style("fill", "#FFFFFF")
+
+
+	          
+	      //Function definition for just TimeLine
+	      d3.select("#year").on("click", function(){
+	        simulation.force('y', forceYCombine).alphaTarget(0.1).restart()
+
+	        // Hide labels
+	        d3.selectAll(".labels").style("visibility","hidden");
+	      });
+
+
+	      // Function definition for Phase 
+	      d3.select("#phase").on("click", function(){
+	        simulation.force("y", forceY).alphaTarget(0.1).restart(); 
+
+
+
+	      // Add labels for phases
+	      var phases = ["One","Two","Three"];
+	      var labels = d3.select("svg g").append("g").selectAll("text")
+	                                      .data(phases)
+	                                      .enter()
+	                                      .append("text");
+
+	      labels.text(function(d) { return "Phase: " + d;})
+	      .attr("class","labels")
+	      .attr("x", function(d, i) { return width/3.5 * (i+1) + padding * (i-1);})
+	      .attr("y", function(d) { return phasePos[d] - 115;})
+	      .style("fill"," #FFFFFF");
+
+	  
+	      });
+
+        });
+
+      });
+
+    </script>
+  </body>
+</html>
