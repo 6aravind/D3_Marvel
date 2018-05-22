@@ -1,4 +1,4 @@
-# Marvel Box Office analysis using D3.js
+# [Marvel Box Office analysis using D3.js](https://bl.ocks.org/aravindr-github/raw/0945e5d60729b1b39e83043a9e9ee6d7/d2562918da66a55a48f969138eaf5088a4e05b39/)
 
 Marvel Studios has released 19 films since 2008 within the Marvel Cinematic Universe, from Iron Man (2008) to Avengers: Infinity War (2018). These films all share continuity with each other, along with the One-Shots produced by the studio and the television shows produced by Marvel Television. The series has grossed over $16 billion at the global box office, making it the highest-grossing film franchise of all time. It was acquired back in 2009 by the Walt Disney Co. DIS for $4 billion. Many were worried that the deal would both ruin beloved Marvel characters like Iron Man and damage Disney's financial standing and stock valuation. Fast forward to 2018, and Disney's acquisition could very well be one of the best things to happen to both the media giant and the comic book publisher.
 
